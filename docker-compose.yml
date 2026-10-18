@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: payouts
+      POSTGRES_USER: payouts
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?задайте POSTGRES_PASSWORD у файлі .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payouts -d payouts"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  collector:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://payouts:${POSTGRES_PASSWORD}@db:5432/payouts
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
